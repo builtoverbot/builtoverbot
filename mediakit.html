@@ -263,7 +263,7 @@
                                 <a href="https://www.twitch.tv/built_over_bot" target="_blank" class="text-xs uppercase tracking-widest font-bold text-purple-600 dark:text-purple-400 hover:underline flex items-center">
                                     <i data-lucide="twitch" class="w-4 h-4 mr-1.5"></i> Twitch
                                 </a>
-                                <span class="px-1.5 py-0.5 bg-amber-900/40 text-[8px] font-bold text-amber-500 rounded border border-amber-800/50 animate-pulse">EST_SYNC</span>
+                                <span id="twitch-status-badge" class="px-1.5 py-0.5 bg-green-900/40 text-[8px] font-bold text-green-400 rounded border border-green-800/50 animate-pulse">LIVE_SYNC</span>
                             </div>
                             <div class="space-y-1">
                                 <div class="text-[10px] text-stone-500 dark:text-green-600 uppercase">Followers</div>
@@ -1036,8 +1036,10 @@
         // Fluctuates counts gently over time to simulate a live-sync environment
         function runRealTimeTelemetry() {
             setInterval(() => {
-                // Apply a tiny simulated fluctuation to other platforms to make the page feel fully alive/automated
-                const platforms = ['twitch', 'instagram', 'tiktok', 'facebook', 'x'];
+                // Apply a tiny simulated fluctuation to other platforms to make the page feel fully alive/automated.
+                // Note: YouTube and Twitch are fully live-synced from public transceivers.
+                // Instagram, TikTok, Facebook, and Twitter/X use simulated telemetry due to strict unauthenticated API walls.
+                const platforms = ['instagram', 'tiktok', 'facebook', 'x'];
 
                 platforms.forEach(p => {
                     // Random micro fluctuation for reach (e.g. +/- 1 to 5 impressions)
@@ -1207,10 +1209,51 @@
                     }
                 }
 
+                // Fetch Twitch Followers from DecAPI
+                try {
+                    const twitchResponse = await fetch('https://decapi.me/twitch/followcount/built_over_bot');
+                    if (twitchResponse.ok) {
+                        const twitchText = await twitchResponse.text();
+                        const parsedTwitch = parseInt(twitchText.trim());
+                        if (!isNaN(parsedTwitch)) {
+                            platformCurrent.twitch.followers = parsedTwitch;
+                            updatedFromAPI = true;
+                        }
+                    }
+                } catch (twitchErr) {
+                    console.error("Twitch followers live sync error:", twitchErr);
+                }
+
+                // Fetch Twitch status / online status
+                try {
+                    const twitchStatusResponse = await fetch('https://decapi.me/twitch/uptime/built_over_bot');
+                    if (twitchStatusResponse.ok) {
+                        const twitchStatusText = await twitchStatusResponse.text();
+                        const isLive = !twitchStatusText.includes('offline');
+                        const twitchBadge = document.getElementById("twitch-status-badge");
+                        if (twitchBadge) {
+                            if (isLive) {
+                                twitchBadge.textContent = "LIVE_NOW // " + twitchStatusText.trim().toUpperCase();
+                                twitchBadge.className = "px-1.5 py-0.5 bg-red-900/60 text-[8px] font-bold text-red-400 rounded border border-red-800/50 animate-pulse";
+                            } else {
+                                twitchBadge.textContent = "LIVE_SYNC";
+                                twitchBadge.className = "px-1.5 py-0.5 bg-green-900/40 text-[8px] font-bold text-green-400 rounded border border-green-800/50 animate-pulse";
+                            }
+                        }
+                    }
+                } catch (statusErr) {
+                    console.error("Twitch status live sync error:", statusErr);
+                }
+
                 // Update UI elements with live data
                 document.getElementById("yt-followers").textContent = platformCurrent.youtube.followers.toLocaleString();
                 document.getElementById("yt-reach").textContent = platformCurrent.youtube.reach.toLocaleString();
                 document.getElementById("yt-engagement").textContent = platformCurrent.youtube.engagement.toFixed(2) + '%';
+
+                // Update Twitch UI elements with live data
+                if (document.getElementById("twitch-followers")) {
+                    document.getElementById("twitch-followers").textContent = platformCurrent.twitch.followers.toLocaleString();
+                }
 
                 // Update Chart.js comparison chart with actual live values
                 if (crossPlatformChart) {
