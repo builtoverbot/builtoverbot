@@ -1124,47 +1124,6 @@
             });
         }
 
-        // --- DYNAMIC LIVE METRICS & REAL-TIME ESTIMATION SYSTEM ---
-        // Fluctuates counts gently over time to simulate a live-sync environment
-        function runRealTimeTelemetry() {
-            setInterval(() => {
-                // Apply a tiny simulated fluctuation to other platforms to make the page feel fully alive/automated.
-                // Note: YouTube and Twitch are fully live-synced from public transceivers.
-                // Instagram, TikTok, Facebook, and Twitter/X use simulated telemetry due to strict unauthenticated API walls.
-                const platforms = ['instagram', 'tiktok', 'facebook', 'x'];
-
-                platforms.forEach(p => {
-                    // Random micro fluctuation for reach (e.g. +/- 1 to 5 impressions)
-                    const reachDelta = Math.floor(Math.random() * 9) - 4;
-                    platformCurrent[p].reach = Math.max(10, platformCurrent[p].reach + reachDelta);
-
-                    // Random micro fluctuation for engagement rate (e.g. +/- 0.01% to 0.05%)
-                    const engDelta = (Math.random() * 0.1 - 0.05);
-                    platformCurrent[p].engagement = Math.max(0.1, parseFloat((platformCurrent[p].engagement + engDelta).toFixed(2)));
-
-                    // Micro-fluctuations for followers (less frequent, 10% chance)
-                    if (Math.random() > 0.9) {
-                        const folDelta = Math.random() > 0.5 ? 1 : -1;
-                        platformCurrent[p].followers = Math.max(1, platformCurrent[p].followers + folDelta);
-                    }
-
-                    // Update UI elements
-                    const folElem = document.getElementById(`${p}-followers`);
-                    const reachElem = document.getElementById(`${p}-reach`);
-                    const engElem = document.getElementById(`${p}-engagement`);
-
-                    if (folElem) folElem.textContent = platformCurrent[p].followers.toLocaleString();
-                    if (reachElem) reachElem.textContent = platformCurrent[p].reach.toLocaleString();
-                    if (engElem) engElem.textContent = platformCurrent[p].engagement.toFixed(2) + '%';
-                });
-
-                // Update crossPlatformChart if active metric matches
-                if (crossPlatformChart) {
-                    crossPlatformChart.data.datasets[0].data = getMetricData(activeMetric);
-                    crossPlatformChart.update('none'); // silent update without animation resets
-                }
-            }, 3000); // execute telemetry cycle every 3 seconds
-        }
 
         // Dynamic Runtime Scraping and Live Updating Logic
         async function fetchLiveMetrics() {
@@ -1374,7 +1333,6 @@
             initCharts();
             fetchLiveMetrics();
             startAutoRotation();
-            runRealTimeTelemetry();
         });
     </script>
 </body>
